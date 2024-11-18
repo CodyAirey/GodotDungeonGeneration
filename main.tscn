@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://doudvw7ybpyk7"]
+
+[ext_resource type="Script" path="res://Scripts/Generator2D.cs" id="1_g65fa"]
+[ext_resource type="TileSet" uid="uid://ct7hphc75x8a4" path="res://Assets/Dungeon/Dungeon.tres" id="3_oxevc"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_g65fa")
+Size = Vector2i(256, 144)
+RoomCount = 40
+RoomMinSize = Vector2i(14, 14)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Floors" type="TileMapLayer" parent="."]
+tile_set = ExtResource("3_oxevc")
+
+[node name="Walls" type="TileMapLayer" parent="."]
+tile_set = ExtResource("3_oxevc")

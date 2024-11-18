@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3 uid="uid://vwvyx8me8xyw"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ld71s"]
+size = Vector2(7, 7)
+
+[node name="TileRoot" type="Area2D"]
+
+[node name="TileCollider" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(11, -4)
+shape = SubResource("RectangleShape2D_ld71s")
+
+[node name="TileRect" type="ColorRect" parent="."]
+visible = false
+offset_right = 40.0
+offset_bottom = 40.0
+color = Color(1, 0, 0, 1)
