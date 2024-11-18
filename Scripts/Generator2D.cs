@@ -2,6 +2,7 @@ using Godot;
 using Godot.Collections;
 using System;
 using System.Collections.Generic;
+using Graphs;
 
 public partial class Generator2D : Node
 {
@@ -145,19 +146,20 @@ public partial class Generator2D : Node
 	}
 
 
-	private void Triangulate()
+	void Triangulate()
 	{
-		List<Vertex<Room>> vertices = new List<Vertex<Room>>();
+		List<Vertex> vertices = new List<Vertex>();
 
+		// Convert room centers into vertices
 		foreach (var room in _rooms)
 		{
-			Vector2 roomCenterPoint = (Vector2)room.Bounds.Position + (Vector2)room.Bounds.Size / 2;
-			vertices.Add(new Vertex<Room>(roomCenterPoint, room));
+			Vector2I roomCenter = (Vector2I)((Vector2)room.Bounds.Position + (Vector2)room.Bounds.Size / 2);
+			vertices.Add(new Vertex<Room>(roomCenter, room));
 		}
 
 		delaunay = Delaunay2D<Room>.Triangulate(vertices);
-		GD.Print($"Generated {delaunay.Triangles.Count} triangles");
 
+		GD.Print($"Generated {delaunay.Triangles.Count} triangles and {delaunay.Edges.Count} edges.");
 
 		// Draw for gamers
 		Node2D linesParent = new Node2D();
@@ -185,9 +187,15 @@ public partial class Generator2D : Node
 	private void CreateHallways()
 	{
 		// Add implementation to create hallways using MST (Prim’s algorithm or similar)
-		// Use HashSet<Tuple<Vector2I, Vector2I>> for edges
+		// List<Edge<Room>> edges = new List<Edge<Room>>();
 
-		List<Edge<Vector2I>> edges = new List<Edge<Vector2I>>();
+		// foreach (var edge in delaunay.Edges)
+		// {
+		// 	edges.Add(new Edge<Room>(edge.U, edge.V));
+
+		// }
+
+
 	}
 
 	private void PathfindHallways()

@@ -1,17 +1,18 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using Graphs;
 
 public class Delaunay2D<T>
 {
     public class Triangle : IEquatable<Triangle>
     {
-        public Vertex<T> A { get; set; }
-        public Vertex<T> B { get; set; }
-        public Vertex<T> C { get; set; }
+        public Vertex A { get; set; }
+        public Vertex B { get; set; }
+        public Vertex C { get; set; }
         public bool IsBad { get; set; }
 
-        public Triangle(Vertex<T> a, Vertex<T> b, Vertex<T> c)
+        public Triangle(Vertex a, Vertex b, Vertex c)
         {
             A = a;
             B = b;
@@ -78,21 +79,21 @@ public class Delaunay2D<T>
         public static bool operator !=(Triangle left, Triangle right) => !(left == right);
     }
 
-    public List<Vertex<T>> Vertices { get; private set; }
-    public List<Edge<T>> Edges { get; private set; }
+    public List<Vertex> Vertices { get; private set; }
+    public List<Edge> Edges { get; private set; }
     public List<Triangle> Triangles { get; private set; }
 
     private Delaunay2D()
     {
-        Edges = new List<Edge<T>>();
+        Edges = new List<Edge>();
         Triangles = new List<Triangle>();
     }
 
-    public static Delaunay2D<T> Triangulate(List<Vertex<T>> vertices)
+    public static Delaunay2D<T> Triangulate(List<Vertex> vertices)
     {
         Delaunay2D<T> delaunay = new Delaunay2D<T>
         {
-            Vertices = new List<Vertex<T>>(vertices)
+            Vertices = new List<Vertex>(vertices)
         };
         delaunay.TriangulateInternal();
         return delaunay;
@@ -117,24 +118,24 @@ public class Delaunay2D<T>
         float dy = maxY - minY;
         float deltaMax = Mathf.Max(dx, dy) * 2;
 
-        Vertex<T> p1 = new Vertex<T>(new Vector2(minX - 1, minY - 1));
-        Vertex<T> p2 = new Vertex<T>(new Vector2(minX - 1, maxY + deltaMax));
-        Vertex<T> p3 = new Vertex<T>(new Vector2(maxX + deltaMax, minY - 1));
+        Vertex p1 = new Vertex(new Vector2(minX - 1, minY - 1));
+        Vertex p2 = new Vertex(new Vector2(minX - 1, maxY + deltaMax));
+        Vertex p3 = new Vertex(new Vector2(maxX + deltaMax, minY - 1));
 
         Triangles.Add(new Triangle(p1, p2, p3));
 
         foreach (var vertex in Vertices)
         {
-            List<Edge<T>> polygon = new List<Edge<T>>();
+            List<Edge> polygon = new List<Edge>();
 
             foreach (var t in Triangles)
             {
                 if (t.CircumCircleContains(vertex.Position))
                 {
                     t.IsBad = true;
-                    polygon.Add(new Edge<T>(t.A, t.B));
-                    polygon.Add(new Edge<T>(t.B, t.C));
-                    polygon.Add(new Edge<T>(t.C, t.A));
+                    polygon.Add(new Edge(t.A, t.B));
+                    polygon.Add(new Edge(t.B, t.C));
+                    polygon.Add(new Edge(t.C, t.A));
                 }
             }
 
@@ -162,13 +163,13 @@ public class Delaunay2D<T>
 
         Triangles.RemoveAll(t => t.ContainsVertex(p1.Position) || t.ContainsVertex(p2.Position) || t.ContainsVertex(p3.Position));
 
-        HashSet<Edge<T>> edgeSet = new HashSet<Edge<T>>();
+        HashSet<Edge> edgeSet = new HashSet<Edge>();
 
         foreach (var t in Triangles)
         {
-            var ab = new Edge<T>(t.A, t.B);
-            var bc = new Edge<T>(t.B, t.C);
-            var ca = new Edge<T>(t.C, t.A);
+            var ab = new Edge(t.A, t.B);
+            var bc = new Edge(t.B, t.C);
+            var ca = new Edge(t.C, t.A);
 
             if (edgeSet.Add(ab))
             {
