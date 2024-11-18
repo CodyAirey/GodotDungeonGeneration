@@ -39,10 +39,12 @@ public partial class Generator2D : Node
 	[Export] private Color HallwayColor = new Color(0, 0, 1);
 	[Export] private int TileSize = 16;
 
+	[Export] private double ExtraHallwayChance = .2;
+
 	private Random _random;
 	private Godot.Collections.Dictionary<Vector2I, CellType> _grid;
 	private List<Room> _rooms;
-	private HashSet<Tuple<Vector2I, Vector2I>> _selectedEdges;
+	private HashSet<Prim.Edge> selectedEdges;
 
 	private TileMapLayer floorLayer;
 	private TileMapLayer wallLayer;
@@ -161,16 +163,16 @@ public partial class Generator2D : Node
 
 		GD.Print($"Generated {delaunay.Triangles.Count} triangles and {delaunay.Edges.Count} edges.");
 
-		// Draw for gamers
-		Node2D linesParent = new Node2D();
-		AddChild(linesParent);
+		// // Draw for gamers
+		// Node2D linesParent = new Node2D();
+		// AddChild(linesParent);
 
-		foreach (var triangle in delaunay.Triangles)
-		{
-			DrawLine(linesParent, triangle.A.Position, triangle.B.Position);
-			DrawLine(linesParent, triangle.B.Position, triangle.C.Position);
-			DrawLine(linesParent, triangle.C.Position, triangle.A.Position);
-		}
+		// foreach (var triangle in delaunay.Triangles)
+		// {
+		// 	DrawLine(linesParent, triangle.A.Position, triangle.B.Position);
+		// 	DrawLine(linesParent, triangle.B.Position, triangle.C.Position);
+		// 	DrawLine(linesParent, triangle.C.Position, triangle.A.Position);
+		// }
 	}
 
 	private void DrawLine(Node2D parent, Vector2 start, Vector2 end)
@@ -184,19 +186,42 @@ public partial class Generator2D : Node
 		parent.AddChild(line);
 	}
 
-	private void CreateHallways()
-	{
-		// Add implementation to create hallways using MST (Prim’s algorithm or similar)
-		// List<Edge<Room>> edges = new List<Edge<Room>>();
+private void CreateHallways()
+{
+    // Step 1: Create a list of edges compatible with Prim's algorithm
+    List<Prim.Edge> edges = new List<Prim.Edge>();
 
-		// foreach (var edge in delaunay.Edges)
-		// {
-		// 	edges.Add(new Edge<Room>(edge.U, edge.V));
+    foreach (var edge in delaunay.Edges)
+    {
+        edges.Add(new Prim.Edge(edge.U, edge.V));
+    }
+	
+    // Step 2: Generate the Minimum Spanning Tree (MST)
+    List<Prim.Edge> mst = Prim.MinimumSpanningTree(edges, edges[0].U);
 
-		// }
+    // Select edges for hallways
+    selectedEdges = new HashSet<Prim.Edge>(mst);
 
+    // Create a set of remaining edges by subtracting the MST edges
+    var remainingEdges = new HashSet<Prim.Edge>(edges);
+    remainingEdges.ExceptWith(selectedEdges);
 
+    // Randomly add some of the remaining edges
+    foreach (var edge in remainingEdges)
+    {
+        if (_random.NextDouble() < ExtraHallwayChance)
+        {
+            selectedEdges.Add(edge);
+        }
+    }
+
+	Node2D linesParent = new Node2D();
+	AddChild(linesParent);
+
+	foreach(var edge in selectedEdges){
+		DrawLine(linesParent, edge.U.Position, edge.V.Position);
 	}
+}
 
 	private void PathfindHallways()
 	{
