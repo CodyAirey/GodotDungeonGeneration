@@ -166,21 +166,22 @@ public partial class Generator2D : Node
 		// // Draw for gamers
 		// Node2D linesParent = new Node2D();
 		// AddChild(linesParent);
+		// Color drawColor = new Color(0,0,1);
 
 		// foreach (var triangle in delaunay.Triangles)
 		// {
-		// 	DrawLine(linesParent, triangle.A.Position, triangle.B.Position);
-		// 	DrawLine(linesParent, triangle.B.Position, triangle.C.Position);
-		// 	DrawLine(linesParent, triangle.C.Position, triangle.A.Position);
+		// 	DrawLine(linesParent, triangle.A.Position, triangle.B.Position, drawColor);
+		// 	DrawLine(linesParent, triangle.B.Position, triangle.C.Position, drawColor);
+		// 	DrawLine(linesParent, triangle.C.Position, triangle.A.Position, drawColor);
 		// }
 	}
 
-	private void DrawLine(Node2D parent, Vector2 start, Vector2 end)
+	private void DrawLine(Node2D parent, Vector2 start, Vector2 end, Color drawColor)
 	{
 		Line2D line = new Line2D
 		{
 			Points = new Vector2[] { start, end },
-			DefaultColor = new Color(0, 1, 0),
+			DefaultColor = drawColor,
 			Width = 3
 		};
 		parent.AddChild(line);
@@ -217,9 +218,10 @@ private void CreateHallways()
 
 	Node2D linesParent = new Node2D();
 	AddChild(linesParent);
+	Color drawColor = new Color(0,1,0);
 
 	foreach(var edge in selectedEdges){
-		DrawLine(linesParent, edge.U.Position, edge.V.Position);
+		DrawLine(linesParent, edge.U.Position, edge.V.Position, drawColor);
 	}
 }
 
