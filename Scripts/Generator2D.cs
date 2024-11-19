@@ -42,7 +42,7 @@ public partial class Generator2D : Node
 	[Export] private double ExtraHallwayChance = .2;
 
 	private Random _random;
-	private Godot.Collections.Dictionary<Vector2I, CellType> _grid;
+	private Grid2D<CellType> _grid;
 	private List<Room> _rooms;
 	private HashSet<Prim.Edge> selectedEdges;
 
@@ -88,7 +88,7 @@ public partial class Generator2D : Node
 	private void Generate()
 	{
 		_random = new Random();
-		_grid = new Godot.Collections.Dictionary<Vector2I, CellType>();
+		_grid = new Grid2D<CellType>(Size, Vector2I.Zero);
 		_rooms = new List<Room>();
 
 		PlaceRooms();
@@ -187,48 +187,116 @@ public partial class Generator2D : Node
 		parent.AddChild(line);
 	}
 
-private void CreateHallways()
-{
-    // Step 1: Create a list of edges compatible with Prim's algorithm
-    List<Prim.Edge> edges = new List<Prim.Edge>();
+	private void CreateHallways()
+	{
+		// Step 1: Create a list of edges compatible with Prim's algorithm
+		List<Prim.Edge> edges = new List<Prim.Edge>();
 
-    foreach (var edge in delaunay.Edges)
-    {
-        edges.Add(new Prim.Edge(edge.U, edge.V));
-    }
-	
-    // Step 2: Generate the Minimum Spanning Tree (MST)
-    List<Prim.Edge> mst = Prim.MinimumSpanningTree(edges, edges[0].U);
+		foreach (var edge in delaunay.Edges)
+		{
+			edges.Add(new Prim.Edge(edge.U, edge.V));
+		}
 
-    // Select edges for hallways
-    selectedEdges = new HashSet<Prim.Edge>(mst);
+		// Step 2: Generate the Minimum Spanning Tree (MST)
+		List<Prim.Edge> mst = Prim.MinimumSpanningTree(edges, edges[0].U);
 
-    // Create a set of remaining edges by subtracting the MST edges
-    var remainingEdges = new HashSet<Prim.Edge>(edges);
-    remainingEdges.ExceptWith(selectedEdges);
+		// Select edges for hallways
+		selectedEdges = new HashSet<Prim.Edge>(mst);
 
-    // Randomly add some of the remaining edges
-    foreach (var edge in remainingEdges)
-    {
-        if (_random.NextDouble() < ExtraHallwayChance)
-        {
-            selectedEdges.Add(edge);
-        }
-    }
+		// Create a set of remaining edges by subtracting the MST edges
+		var remainingEdges = new HashSet<Prim.Edge>(edges);
+		remainingEdges.ExceptWith(selectedEdges);
 
-	Node2D linesParent = new Node2D();
-	AddChild(linesParent);
-	Color drawColor = new Color(0,1,0);
+		// Randomly add some of the remaining edges
+		foreach (var edge in remainingEdges)
+		{
+			if (_random.NextDouble() < ExtraHallwayChance)
+			{
+				selectedEdges.Add(edge);
+			}
+		}
 
-	foreach(var edge in selectedEdges){
-		DrawLine(linesParent, edge.U.Position, edge.V.Position, drawColor);
+		Node2D linesParent = new Node2D();
+		AddChild(linesParent);
+		Color drawColor = new Color(0, 1, 0);
+
+		foreach (var edge in selectedEdges)
+		{
+			DrawLine(linesParent, edge.U.Position, edge.V.Position, drawColor);
+		}
 	}
-}
 
 	private void PathfindHallways()
 	{
 		// Use A* or other pathfinding for hallway generation
 		// Implement the logic for traversing between selected room centers
+		DungeonPathfinder2D aStar = new DungeonPathfinder2D(Size);
+
+		foreach (var edge in selectedEdges)
+		{
+			GD.Print("Calculating path edge");
+			var startRoom = (edge.U as Vertex<Room>).Item;
+			var endRoom = (edge.V as Vertex<Room>).Item;
+
+			var startPosf = startRoom.Bounds.Position / TileSize;
+			var endPosf = endRoom.Bounds.Position / TileSize;
+			var startPos = new Vector2I((int)startPosf.X, (int)startPosf.Y);
+			var endPos = new Vector2I((int)endPosf.X, (int)endPosf.Y);
+
+			GD.Print(startPos, endPos);
+
+			var path = aStar.FindPath(startPos, endPos, (DungeonPathfinder2D.Node a, DungeonPathfinder2D.Node b) =>
+			{
+				var pathCost = new DungeonPathfinder2D.PathCost();
+
+				pathCost.cost = startPos.DistanceTo(endPos);    //heuristic
+
+				if (_grid[b.Position] == CellType.Room)
+				{
+					pathCost.cost += 10;
+				}
+				else if (_grid[b.Position] == CellType.None)
+				{
+					pathCost.cost += 5;
+				}
+				else if (_grid[b.Position] == CellType.Hallway)
+				{
+					pathCost.cost += 1;
+				}
+
+				pathCost.traversable = true;
+
+				return pathCost;
+			});
+
+			if (path != null)
+			{
+				for (int i = 0; i < path.Count; i++)
+				{
+					var current = path[i];
+
+					if (_grid[current] == CellType.None)
+					{
+						_grid[current] = CellType.Hallway;
+					}
+
+					if (i > 0)
+					{
+						var prev = path[i - 1];
+
+						var delta = current - prev;
+					}
+				}
+
+				foreach (var pos in path)
+				{
+					if (_grid[pos] == CellType.Hallway)
+					{
+						PlaceHallway(pos);
+					}
+				}
+			}
+		}
 	}
 
 	private void PlaceRoom(Vector2I location, Vector2I size)
@@ -264,7 +332,13 @@ private void CreateHallways()
 
 	private void PlaceHallway(Vector2I location)
 	{
-		PlaceCube(location, Vector2I.One, HallwayColor);
+		Array<Vector2I> locations = new Array<Vector2I>
+        {
+            location
+        };
+		
+		floorLayer.SetCellsTerrainConnect(locations, 0, 0, false);
+		// PlaceCube(location, Vector2I.One, HallwayColor);
 	}
 
 	private void PlaceCube(Vector2I location, Vector2I size, Color color)
